@@ -1,38 +1,50 @@
 """
-Sources configuration — X profiles to monitor.
-
-Add the X handles you want to pull news from here.
-These are the profiles you will list.
+X Profiles to Monitor — add the handles you provide.
+Default: Google Search is the primary news source.
+X profiles are supplementary for breaking news from companies/CEOs.
 """
 
-# Bitcoin news sources on X — add any profile you want to monitor
+# Bitcoin-specific / News
 X_PROFILES = [
-    # Bitcoin-specific accounts
-    "saylor",                    # Michael Saylor / Strategy
-    "APompliano",               # Anthony Pompliano
-    "lopp",                     # Luke Dash Jr
-    "nic_carter",               # Nic Carter (Castle Island)
-    "APompliano",               # Pomp
-    "TheRealCoinDCFO",          # CoinDesk CFO
-    # Institutional / ETF
-    "BlackRock",                # BlackRock
-    "Fidelity",                 # Fidelity Digital Assets
-    "Coinbase",                 # Coinbase
-    "Strategy",                 # MicroStrategy/Strategy
-    "ARKInvest",                # ARK Invest
-    # Media / Analysis
-    "coindesk",                 # CoinDesk
-    "TheBlock",                 # The Block
-    "cointelegraph",            # Cointelegraph
-    "bitcoinmagazine",          # Bitcoin Magazine
-    # Regulatory / Policy
-    "SECGov",                   # SEC
-    "CFTC",                     # CFTC
-    "USTreasury",               # US Treasury
-    "SenWarren",                # Elizabeth Warren (for policy tracking)
-    "SenToomey",                # Pat Toomey
-    # Additional sources to fill in when you provide handles
+    # Company / CEO C-Suite (breaking news source)
+    "saylor",           # Michael Saylor / Strategy
+    "Strategy",         # Strategy (MicroStrategy)
+    "Coinbase",         # Coinbase
+    "BlackRock",        # BlackRock IBIT
+    "Fidelity",         # Fidelity Digital Assets
+    "ARKInvest",        # ARK Invest
+
+    # News / Analysis
+    "coindesk",         # CoinDesk
+    "TheBlock",         # The Block
+    "cointelegraph",    # Cointelegraph
+    "bitcoinmagazine",  # Bitcoin Magazine
+
+    # Your specific additions
+    "geyserfund",       # Geyser Fund
+    "freddienew",       # Fredi Neue
+    "cakewallet",       # Cake Wallet
+    "sethforprivacy",   # Seth For Privacy
+    "lnbits",           # LNBits - Lightning News
+    "LightningNewsX",   # Lightning News
+    "utexo",            # UTXO - Bitcoin payments
+    "blocks",           # Block / Jack
+    "blockIR",          # Block IR
+    "jack",             # Jack Dorsey (no reposts)
+    "glxyresearch",     # Galaxy Research
+    "ODELLXYZ",         # Odell / Square / CashApp
+    "WatcherGuru",      # WatcherGuru
+    # Analysts
+    "cryptovizart",     # Glassnode
+    "ccleffert",        # Punchbowl News
+    "LauraEWeiss16",    # Punchbowl News
+    "coffeebreak_YT",   # Bitcoin only
+    "ZynxBTC",          # Analysis only (manual review)
 ]
 
-# You can add more profiles here. When you provide the list,
-# I'll update this file with the exact handles you specify.
+# Profiles that should be logged but NOT auto-posted (manual review)
+MANUAL_REVIEW_ONLY = [
+    "saifedean",    # Quotes only, never auto-post
+    "ZynxBTC",      # Analysis only, run through you first
+    "jordanguess",  # Only when Bitcoin/crypto specific
+]

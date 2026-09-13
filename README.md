@@ -1,144 +1,102 @@
 # Bitcoin News Fetcher Bot v2.0
 
-**Combined bot that fetches Bitcoin news from X profiles, Google Advanced Search, and SEC EDGAR — then posts directly to @AdrianJordan_io.**
-
-## What It Does
-
-```
-┌─────────────────────────────────────────────────┐
-│              SOURCES (every 5 min)               │
-│                                                   │
-│  ┌──────────────┐  ┌─────────────┐  ┌──────────┐ │
-│  │ X Profiles   │  │ Google      │  │ SEC EDGAR│ │
-│  │ (fetch posts │  │ Advanced    │  │ 10-K/8-K/│ │
-│  │  from list)  │  │ Search      │  │  10-Q    │ │
-│  └──────┬───────┘  └──────┬──────┘  └────┬─────┘ │
-│         │                 │               │       │
-│         └────────┬────────┴───────────────┘       │
-│                  ↓                                │
-│          Dedup Engine                             │
-│          (seen_stories.json)                      │
-│                  ↓                                │
-│          AI Processor (Claude)                    │
-│          → 3 draft options per story              │
-│                  ↓                                │
-│          X Poster (Tweepy)                        │
-│          → Posts to @AdrianJordan_io              │
-│                                                   │
-└─────────────────────────────────────────────────┘
-```
+**Combined bot: Google Search (primary), X profiles, and SEC EDGAR — posts directly to @AdrianJordan_io.**
 
 ## Architecture
 
 ```
-news-fetcher-bot/
-├── main.py                  # Entry point with CLI args
-├── requirements.txt         # Python dependencies
-├── .env.template            # Environment template
-├── README.md               # This file
-├── core/
-│   ├── __init__.py         # Core module exports
-│   └── config.py           # Shared config, models, dedup engine
-├── modules/
-│   ├── x_scraper.py        # Fetch posts from X profiles
-│   ├── google_search.py    # Google Advanced Search for Bitcoin news
-│   ├── sec_edgar.py        # SEC EDGAR filings (10-K, 8-K, 10-Q)
-│   ├── ai_processor.py     # Claude-based headline rewriting
-│   ├── x_poster.py         # Direct posting to @AdrianJordan_io
-│   └── orchestrator.py     # Main scheduler + pipeline
-└── sources/
-    └── x_profiles.py       # X profiles to monitor
+┌─────────────────────────────────────────────────┐
+│           SOURCES (every 5 min, configurable)      │
+│                                                    │
+│  ┌──────────────┐  ┌──────────┐  ┌───────────┐  │
+│  │ Google Search│  │ X Profiles│  │ SEC EDGAR │  │
+│  │  (PRIMARY)   │  │ (Secondary)│  │ (Secondary)│  │
+│  └──────┬───────┘  └─────┬────┘  └─────┬─────┘  │
+│         │                 │              │         │
+│         └────────┬────────┴──────────────┘         │
+│                  ↓                                  │
+│          Dedup Engine (seen_stories.json)           │
+│                  ↓                                  │
+│          AI Processor (Claude)                      │
+│          → 3 draft options per story                │
+│                  ↓                                  │
+│          X Poster (Tweepy)                          │
+│          → Posts to @AdrianJordan_io               │
+│                                                    │
+└─────────────────────────────────────────────────┘
 ```
 
 ## Quick Start
 
 ```bash
-# 1. Copy .env.template and fill in your keys
+# 1. Copy .env.template and fill in API keys
 cp .env.template .env
 
-# 2. Install dependencies
+# 2. Install deps
 pip install -r requirements.txt
 
-# 3. Run once to test (no posting)
+# 3. Test (runs cycle, no posting)
 python main.py --test
 
-# 4. Run single cycle
+# 4. Single cycle
 python main.py --once
 
-# 5. Run continuously (default: every 5 min)
+# 5. Continuous (default 5 min)
 python main.py
-
-# 6. Custom interval
-python main.py --interval 10  # every 10 minutes
+python main.py --interval 10  # every 10 min
 ```
+
+## API Keys Needed
+
+| Service | Key | Where to get |
+|---------|-----|-------------|
+| **Anthropic** | `ANTHROPIC_API_KEY` | console.anthropic.com |
+| **Twitter/X** | 5 tokens (see .env) | developer.x.com |
+| **Google** | `GOOGLE_API_KEY` + `GOOGLE_CX` | Google Cloud Console |
 
 ## CLI Options
 
 | Flag | Description |
 |------|-------------|
 | `--once` | Run one cycle and exit |
-| `--test` | Quick smoke test (no posting) |
-| `--interval N` | Set polling interval in minutes |
-
-## Configuration (.env)
-
-```env
-# AI
-ANTHROPIC_API_KEY=your_claude_api_key
-
-# X/Twitter
-TWITTER_BEARER_TOKEN=
-TWITTER_API_KEY=
-TWITTER_API_SECRET=
-TWITTER_ACCESS_TOKEN=
-TWITTER_ACCESS_SECRET=
-TARGET_HANDLE=AdrianJordan_io
-
-# Google Search
-GOOGLE_API_KEY=your_google_api_key
-GOOGLE_CX=your_custom_search_engine_id
-
-# Scheduler
-FETCH_INTERVAL_MINUTES=5
-
-# SEC EDGAR
-SEC_CIK_NUMBERS=0001350862,0000320193
-```
+| `--test` | Single cycle (no posting) |
+| `--interval N` | Polling interval (default: 5 min) |
 
 ## Sources
 
-### X Profiles (`sources/x_profiles.py`)
-Edit this file to add/remove X handles. The bot fetches recent posts from each profile and filters for Bitcoin/crypto-relevant content.
+### Google Search (PRIMARY)
+`modules/google_search.py` — Searches 16 Bitcoin-related queries via Google Custom Search API. This is the **primary** source because it catches breaking news fastest. X profiles and SEC filings are supplementary.
 
-### Google Advanced Search (`modules/google_search.py`)
-Uses Google Programmable Search API (or Serper fallback) to search for Bitcoin news across crypto outlets, institutional sources, and regulatory news.
+### X Profiles (SECONDARY)
+`sources/x_profiles.py` — Monitors ~30 Bitcoin-specific X accounts including @saylor, @APompliano, @lopp, @coindesk, @BlackRock, and more. Edit this file to add/remove handles.
 
-### SEC EDGAR (`modules/sec_edgar.py`)
-Searches SEC EDGAR full-text search for 10-K, 10-Q, and 8-K filings mentioning Bitcoin, cryptocurrency, or digital assets. Also supports filtering by specific CIK numbers.
+### SEC EDGAR (SECONDARY)
+`modules/sec_edgar.py` — Searches 10-K, 10-Q, and 8-K filings mentioning Bitcoin/crypto. Configure `SEC_CIK_NUMBERS` in `.env`.
 
-### AI Processing (`modules/ai_processor.py`)
-Every story passes through Claude which generates 3 draft X posts following the @AdrianJordan_io brand voice.
+## X Profiles Included
 
-### X Posting (`modules/x_poster.py`)
-Direct posting to @AdrianJordan_io using Tweepy. Supports single tweets and thread posting with rate limiting.
+- **Company/CEO**: @saylor, @Strategy, @Coinbase, @BlackRock, @Fidelity, @ARKInvest
+- **News**: @coindesk, @TheBlock, @cointelegraph, @bitcoinmagazine
+- **Lightning/Payments**: @geyserfund, @lnbits, @LightningNewsX, @utexo
+- **Block/Jacks**: @blocks, @blockIR, @jack
+- **Research**: @glxyresearch, @cryptovizart, @ODELLXYZ
+- **Analysts**: @WatcherGuru, @coffeebreak_YT, @ZynxBTC (manual review)
+- **Policy**: @SenWarren, @SenToomey, @SECGov, @CFTC, @USTreasury
 
 ## Brand Voice
 
-- **Tone**: Direct, authoritative, knowledgeable
-- **Style**: Headline-only, no preamble, no hashtags
-- **Length**: Under 280 characters
-- **Impact**: Stack the most important fact first
-- **Accuracy**: Never invent facts or sensationalize
+- Direct, authoritative, no hashtags, under 280 chars
+- Impact first, accuracy always
+- Never uses: "supply shock", "what a time to be alive", "it's happening"
 
-## Planned Features
+## Future Features
 
-- [ ] Add webhook triggers for immediate posting
-- [ ] Add Telegram/Slack notifications
-- [ ] Add media attachments (charts, screenshots)
-- [ ] Add thread threading for longer analysis
-- [ ] Add sentiment scoring for draft selection
-- [ ] Add posting history database
+- [ ] Telegram channel notifications
+- [ ] Webhook-triggered immediate posts
+- [ ] Thread posting for longer analysis
+- [ ] Media attachments (charts, screenshots)
+- [ ] List-based scraping from your X lists
 
 ## Part of the JECI Group Stack
 
-Built and maintained by [Adrian Jordan](https://github.com/tradersurfer) · [JECI Group](https://jecigroup.com)
+Built and maintained by Adrian Jordan · [JECI Group](https://jecigroup.com)
